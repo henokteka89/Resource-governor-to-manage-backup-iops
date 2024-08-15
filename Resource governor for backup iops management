@@ -1,0 +1,132 @@
+Step 1: Create a Resource Pool
+
+A Resource Pool defines the maximum CPU and I/O resources that can be used by a workload group.
+
+-- Create a Resource Pool with specific I/O limits
+CREATE RESOURCE POOL BackupPool
+WITH
+(
+   MAX_IOPS_PER_VOLUME = 2000,  -- Set this according to your needs
+   MIN_IOPS_PER_VOLUME = 100,   -- Ensure a minimum level of I/O for other operations
+   MAX_MEMORY_PERCENT = 20,     -- Set the maximum memory usage
+   CAP_CPU_PERCENT = 10         -- Set the maximum CPU usage (optional if CPU is not the bottleneck)
+);
+GO
+Step 2: Create a Workload Group
+
+A Workload Group is where you define how queries using the Resource Pool will be managed.
+
+-- Create a Workload Group within the BackupPool CREATE WORKLOAD GROUP BackupGroup USING BackupPool; GO
+
+Step 3: Create a Classifier Function
+
+The Classifier Function is a user-defined function that directs specific sessions to the appropriate Workload Group based on certain criteria. You'll define the function to route backup operations to the 'BackupGroup'.
+
+CREATE FUNCTION dbo.BackupClassifier() RETURNS SYSNAME
+WITH SCHEMABINDING
+AS
+BEGIN
+    DECLARE @WorkloadGroup SYSNAME;
+
+    -- Check if the session is running a backup operation
+    IF EXISTS (
+        SELECT 1
+        FROM sys.dm_exec_requests r
+        CROSS APPLY sys.dm_exec_sql_text(r.sql_handle) t
+        WHERE r.session_id = @@SPID
+          AND t.text LIKE 'BACKUP DATABASE%'
+          AND (
+                t.text LIKE '%YourDatabaseName1%'
+                OR t.text LIKE '%YourDatabaseName2%'
+                OR t.text LIKE '%YourDatabaseName3%'
+              )
+    )
+    BEGIN
+        SET @WorkloadGroup = 'BackupGroup';
+    END
+    ELSE
+    BEGIN
+        SET @WorkloadGroup = 'default'; -- Default workload group
+    END
+
+    RETURN @WorkloadGroup;
+END;
+GO
+
+Step 4: Enable the Classifier Function in Resource Governor
+
+Assign the classifier function to Resource Governor.
+
+-- Enable Resource Governor and assign the classifier function
+ALTER RESOURCE GOVERNOR WITH (CLASSIFIER_FUNCTION = dbo.BackupClassifier);
+GO
+
+-- Apply the Resource Governor configuration
+ALTER RESOURCE GOVERNOR RECONFIGURE;
+GO
+
+Step 5: Test the Configuration
+
+To ensure that the Resource Governor is working as expected, you can run a full backup on one of the specified databases and monitor the Resource Governor statistics.
+
+-- Perform a full backup on one of the databases
+BACKUP DATABASE YourDatabaseName1 TO DISK = 'YourBackupPath\YourDatabaseName1.bak';
+GO
+
+-- Check which workload group is being used
+SELECT
+    session_id,
+    workload_group_id,
+    r.*,
+    t.text
+FROM sys.dm_exec_requests r
+JOIN sys.dm_exec_sessions s ON r.session_id = s.session_id
+CROSS APPLY sys.dm_exec_sql_text(r.sql_handle) t
+WHERE r.command = 'BACKUP DATABASE';
+GO
+
+Additional Considerations:
+
+• Adjust the Resource Pool parameters as necessary based on the specific needs of your environment.
+
+• Monitor the Impact of these settings, as resource limits might need to be adjusted based on actual performance.
+
+• Backups Outside of Resource Governor: If needed, other backups (e.g., log backups) not tied to this pool can be routed through a different or default pool.
+
+
+
+Determining the IOPS Limit
+
+Given that throughput is often the limiting factor, you need to balance your IOPS setting to match the throughput without exceeding the disk’s capabilities. Here’s a simple calculation approach:
+
+• Baseline Calculation: Throughput is the product of IOPS and the size of each I/O operation. If you're dealing with typical I/O sizes (e.g., 64 KB):
+
+• Throughput=IOPS×I/O Size\text{Throughput} = \text{IOPS} \times \text{I/O Size}Throughput=IOPS×I/O Size
+
+• IOPS=ThroughputI/O Size\text{IOPS} = \frac{\text{Throughput}}{\text{I/O Size}}IOPS=I/O SizeThroughput​
+
+• For 500 MBps throughput and 64 KB I/O size:
+
+• IOPS=500×102464=8,000 IOPS\text{IOPS} = \frac{500 \times 1024}{64} = 8,000 \text{ IOPS}IOPS=64500×1024​=8,000 IOPS
+
+Adjust for Disk Limits:
+
+• Since the maximum IOPS for a P50 disk is 7,500, you should not set a limit higher than this.
+
+• Set the Resource Governor IOPS limit slightly below the maximum to ensure other processes can still use the disk.
+
+• Ideal IOPS setting for Resource Governor: 6,000 to 7,000 IOPS.
+
+Applying the IOPS Limit in Resource Governor
+-- Create or alter the resource pool with an IOPS limit
+ALTER RESOURCE POOL BackupPool
+WITH
+(
+   MAX_IOPS_PER_VOLUME = 6500, -- Set just below the maximum limit
+   MIN_IOPS_PER_VOLUME = 500   -- Ensure a minimum level of I/O for other operations
+);
+GO
+
+-- Apply the Resource Governor configuration
+ALTER RESOURCE GOVERNOR RECONFIGURE;
+GO
