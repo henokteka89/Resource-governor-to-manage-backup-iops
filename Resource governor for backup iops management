@@ -78,16 +78,20 @@ BACKUP DATABASE YourDatabaseName1 TO DISK = 'YourBackupPath\YourDatabaseName1.ba
 GO
 
 -- Check which workload group is being used
-SELECT
-    session_id,
-    workload_group_id,
-    r.*,
-    t.text
-FROM sys.dm_exec_requests r
-JOIN sys.dm_exec_sessions s ON r.session_id = s.session_id
-CROSS APPLY sys.dm_exec_sql_text(r.sql_handle) t
-WHERE r.command = 'BACKUP DATABASE';
-GO
+--- Show the logins
+use master;
+go
+
+Select 
+s.session_id
+,s.login_name
+,g.name
+from sys.dm_exec_sessions as s
+join sys.dm_resource_governor_workload_groups as g
+on s.group_id = g.group_id
+where s.session_id > 60
+
+ 
 
 Additional Considerations:
 
