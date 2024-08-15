@@ -1,0 +1,88 @@
+-- Works fine.
+-- Step 1: Create a Resource Pool
+
+CREATE RESOURCE POOL BackupResourcePool
+WITH
+(
+    MAX_IOPS_PER_VOLUME = 5 -- Set the maximum IOPS for the backup process.
+);
+
+-- Step 2: Create a Workload Group
+CREATE WORKLOAD GROUP BackupWorkloadGroup
+USING BackupResourcePool;
+
+-- Step 3: Create a Classifier Function
+
+ALTER FUNCTION dbo.ResourceGovernorClassifier() 
+RETURNS SYSNAME 
+WITH SCHEMABINDING
+AS
+BEGIN
+    DECLARE @WorkloadGroup SYSNAME;
+
+    -- Assign to the BackupWorkloadGroup if the request is a backup operation
+    IF (APP_NAME() = 'SQLAgent - TSQL JobStep (Job 0xAE4D37BD249B27488F5262144500C79A : Step 1)') -- Adjust this according to your backup job application name
+        -- OR (APP_NAME() LIKE '%Backup%')
+		-- OR APP_NAME() LIKE 'SQLAgent - TSQL JobStep (Job 0xAnotherJobID%'
+   -- Add more jobs as needed
+		/*
+		add to the job this command to get app name
+		--insert into admin.dbo.appname
+--SELECT APP_NAME() AS ApplicationName;
+
+--select * from admin.dbo.appname
+
+		*/
+    BEGIN
+        SET @WorkloadGroup = 'BackupWorkloadGroup';
+    END
+    ELSE
+    BEGIN
+        SET @WorkloadGroup = 'default';
+    END
+
+    RETURN @WorkloadGroup;
+END;
+
+-- Step 4: Enable the Resource Governor
+ALTER RESOURCE GOVERNOR WITH (CLASSIFIER_FUNCTION = dbo.ResourceGovernorClassifier);
+ALTER RESOURCE GOVERNOR RECONFIGURE;
+
+--if you want to make change to classifier function, first do the below change then change the classifier
+ALTER RESOURCE GOVERNOR WITH (CLASSIFIER_FUNCTION = NULL);
+ALTER RESOURCE GOVERNOR RECONFIGURE;
+
+--Step 5: Verify the Configuration
+SELECT * FROM sys.dm_resource_governor_workload_groups;
+SELECT * FROM sys.dm_resource_governor_resource_pools;
+
+-- Check which workload group is being used
+--- Show the logins
+use master;
+go
+
+Select 
+s.session_id
+,s.login_name
+,g.name
+from sys.dm_exec_sessions as s
+join sys.dm_resource_governor_workload_groups as g
+on s.group_id = g.group_id
+where s.session_id > 60
+ 
+
+ /*
+ --Get backup jobs with ID
+ USE msdb;
+GO
+
+SELECT 
+    name AS JobName, 
+    job_id AS JobID
+FROM 
+    dbo.sysjobs
+WHERE 
+    name LIKE '%Backup%'; -- You can replace this with the specific job name you're looking for.
+
+
+ */
