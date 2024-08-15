@@ -1,6 +1,8 @@
+Controlling Chaos with Resource Governor - John Miner
+https://www.youtube.com/watch?v=LkwlkQoaiu4
 Step 1: Create a Resource Pool
 
-A Resource Pool defines the maximum CPU and I/O resources that can be used by a workload group.
+-- A Resource Pool defines the maximum CPU and I/O resources that can be used by a workload group.
 
 -- Create a Resource Pool with specific I/O limits
 CREATE RESOURCE POOL BackupPool
@@ -16,7 +18,9 @@ Step 2: Create a Workload Group
 
 A Workload Group is where you define how queries using the Resource Pool will be managed.
 
--- Create a Workload Group within the BackupPool CREATE WORKLOAD GROUP BackupGroup USING BackupPool; GO
+-- Create a Workload Group within the BackupPool 
+CREATE WORKLOAD GROUP BackupGroup USING BackupPool;
+GO
 
 Step 3: Create a Classifier Function
 
