@@ -1,10 +1,17 @@
 CREATE LOGIN backupoperator WITH PASSWORD = 'YourStrongPassword';
+You can use other names like “maintenanceoperator”, “  dbmaintenance” , “joboperator”
 ----
 USE YourDatabaseName;
 CREATE USER backupoperator FOR LOGIN backupoperator;
 ----
 USE YourDatabaseName;
 ALTER ROLE db_backupoperator ADD MEMBER backupoperator; --for backup only, else give sysadmin
+
+for index too
+ALTER ROLE db_backupoperator ADD MEMBER maintenanceoperator;
+ALTER ROLE db_ddladmin ADD MEMBER maintenanceoperator;
+USE msdb;
+EXEC sp_addrolemember 'SQLAgentOperatorRole', 'maintenanceoperator'; --Job Execution Permissions
 
 
 ---
