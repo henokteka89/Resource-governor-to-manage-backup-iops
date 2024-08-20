@@ -1,0 +1,35 @@
+CREATE LOGIN backupoperator WITH PASSWORD = 'YourStrongPassword';
+----
+USE YourDatabaseName;
+CREATE USER backupoperator FOR LOGIN backupoperator;
+----
+USE YourDatabaseName;
+ALTER ROLE db_backupoperator ADD MEMBER backupoperator; --for backup only, else give sysadmin
+
+
+---
+CREATE FUNCTION dbo.BackupClassifier() RETURNS SYSNAME --Alter?
+WITH SCHEMABINDING
+AS
+BEGIN
+    DECLARE @WorkloadGroup SYSNAME;
+
+    -- Classify based on the login name
+    IF ORIGINAL_LOGIN() = 'backupoperator'
+    BEGIN
+        SET @WorkloadGroup = 'BackupGroup';
+    END
+    ELSE
+    BEGIN
+        SET @WorkloadGroup = 'default'; -- Default workload group
+    END
+
+    RETURN @WorkloadGroup;
+END;
+GO
+
+ALTER RESOURCE GOVERNOR WITH (CLASSIFIER_FUNCTION = dbo.BackupClassifier);
+GO
+
+ALTER RESOURCE GOVERNOR RECONFIGURE;
+GO
