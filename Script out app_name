@@ -1,0 +1,19 @@
+IF OBJECT_ID(N'tempdb..#tmp') IS NOT NULL
+BEGIN
+    DROP TABLE #tmp;
+END;
+SELECT j.job_id,
+       j.name,
+       CONVERT(BINARY(16), j.job_id) AS idbinary,
+       js.step_name,
+       js.command,
+       js.step_id
+INTO #tmp
+FROM msdb.dbo.sysjobs j
+JOIN msdb.dbo.sysjobsteps js
+     ON js.job_id = j.job_id
+WHERE name LIKE 'databasebackup%';
+
+SELECT name, step_name, 'SQLAgent - TSQL JobStep (Job ' + CONVERT(VARCHAR(max), idbinary, 1) + ') : Step ' + 
+       CONVERT(VARCHAR(max), step_id, 1) + ')' AS appname
+FROM #tmp;
