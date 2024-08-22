@@ -25,7 +25,7 @@ GO
 Step 3: Create a Classifier Function
 
 The Classifier Function is a user-defined function that directs specific sessions to the appropriate Workload Group based on certain criteria. You'll define the function to route backup operations to the 'BackupGroup'.
-
+--this function didnt work because it can't bind DMVs
 CREATE FUNCTION dbo.BackupClassifier() RETURNS SYSNAME
 WITH SCHEMABINDING
 AS
