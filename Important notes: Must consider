@@ -1,0 +1,12 @@
+1: Complex functions can cause issues including stopping SQL Server. Keep functions simple, as they will be evaluated for each new session.
+
+2:The Resource Governor doesn’t manage all resources. However, it does allow you to control specific ones, including I/O, CPU, Memory, and Degree of Parallelism.
+
+3: You cannot enable Resource Governor for SQL Server Analysis Services (SSAS), SSIS or SSRS.
+
+4: Resource Governor is available only with Enterprise Edition and Developer Edition. Since Enterprise Edition is costly, unfortunately, you need to pay more money to use this feature.
+
+5: Actual resources may exceed settings. 
+E.g. Pool A has 60% CPU MAX. Pool B has 50% max CPU. When B has no workload, A can consume more than 60%. It can even go upto 100%.  
+
+https://www.mssqltips.com/sqlservertip/6081/sql-server-resource-governor-configuration-with-tsql-and-ssms/
