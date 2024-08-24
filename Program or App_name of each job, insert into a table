@@ -58,5 +58,5 @@ select Jobname, programname, "classification" from admin.dbo.SQLJobsAPP_NAME
 
 
 ---you can edit the RG function 
-if (app_name() in (select programname from  admin.dbo.SQLJobsAPP_NAME where where classification like 'backup' or Classification like 'restore'
+if (app_name() in (select programname from  admin.dbo.SQLJobsAPP_NAME where classification like 'backup' or Classification like 'restore'
 )
