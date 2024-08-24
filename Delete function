@@ -1,0 +1,10 @@
+-- Deleting the function will not be possible unless the fucntion currently used by the resource governor is changed. You will get an error 
+"Cannot drop user-defined function 'ResourceGovernorClassifier'. It is being used as a resource governor classifier."
+
+To resolve this 
+-- change the function in use by resource governor to Null
+ALTER RESOURCE GOVERNOR WITH (CLASSIFIER_FUNCTION = null);
+ALTER RESOURCE GOVERNOR RECONFIGURE;
+
+-- then proceed to drop function
+Drop function [dbo].[ResourceGovernorClassifier]
