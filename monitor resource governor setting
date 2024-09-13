@@ -1,0 +1,10 @@
+-- Shows resrouce governor set up 
+select 
+--pool_id, 
+name 
+,max_cpu_percent
+, max_memory_percent 
+,cap_cpu_percent 
+--*
+from sys.resource_governor_resource_pools 
+--where name = 'default'
