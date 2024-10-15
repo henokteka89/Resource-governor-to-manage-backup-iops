@@ -1,0 +1,43 @@
+https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-resource-governor-transact-sql?view=sql-server-ver16
+
+The following example assigns all new sessions to the default workload group by removing any existing
+classifier function from the Resource Governor configuration. When no function is designated 
+as a classifier function, all new sessions are assigned to the default workload group. 
+This change applies to new sessions only. Existing sessions are not affected.
+
+
+ALTER RESOURCE GOVERNOR WITH (CLASSIFIER_FUNCTION = NULL);  
+GO  
+ALTER RESOURCE GOVERNOR RECONFIGURE;  
+
+
+to change the classifier_function
+ALTER RESOURCE GOVERNOR WITH (CLASSIFIER_FUNCTION=dbo.rgclassifier_v1);  
+GO  
+ALTER RESOURCE GOVERNOR RECONFIGURE;  
+GO  
+
+==========
+https://learn.microsoft.com/en-us/sql/relational-databases/resource-governor/disable-resource-governor?view=sql-server-ver16
+Alternatively Disable resource governor
+
+Disabling the Resource Governor has the following immediate effects:
+
+The classifier function is not run.
+
+All new connections are automatically classified into the default workload group.
+
+System-initiated requests are classified into the internal workload group.
+
+All existing workload group and resource pool settings are reset to their default values. 
+In this case, no events are fired when limits are reached.
+
+Normal system monitoring is not affected.
+
+Configuration changes can be made, but the changes do not take effect until the Resource Governor is enabled.
+
+Upon restarting SQL Server, the Resource Governor will not load its configuration, 
+but instead will have only the default and internal workload groups and resource pools.
+
+ALTER RESOURCE GOVERNOR DISABLE;
+GO
